@@ -1,10 +1,12 @@
 export interface FileSchema {
-  required: string[];
-  exclude?: string[];
+  required?: string[];
   patterns?: string[];
-  directories?: {
-    [key: string]: FileSchema;
-  };
+  directories?: Record<string, FileSchema>;
+  exclude?: string[];
+}
+
+export interface MergedSchema extends FileSchema {
+  _configPath?: string;
 }
 
 export const defaultSchema: FileSchema = {
