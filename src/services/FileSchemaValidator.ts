@@ -62,72 +62,7 @@ export class FileSchemaValidator {
         if (dirDiagnostics.length > 0) {
           diagnostics.push([vscode.Uri.file(dirPath), dirDiagnostics]);
         }
-
-        if (schema.directories) {
-          await this.validateSubDirectories(dirPath, schema, diagnostics);
-        }
       })
     );
-  }
-
-  private async validateSubDirectories(
-    dirPath: string,
-    parentSchema: any,
-    diagnostics: [vscode.Uri, vscode.Diagnostic[]][]
-  ): Promise<void> {
-    await Promise.all(
-      Object.entries(parentSchema.directories).map(
-        async ([dirPattern, dirSchema]) => {
-          const matchingDirs = await fg([dirPattern], {
-            cwd: dirPath,
-            onlyDirectories: true,
-            absolute: true,
-          });
-
-          await Promise.all(
-            matchingDirs.map(async (matchedDir) => {
-              const mergedSchema = this.mergeWithParentSchema(
-                parentSchema,
-                dirSchema
-              );
-              const subDirDiagnostics =
-                await this.validationService.validateDirectory(
-                  matchedDir,
-                  mergedSchema
-                );
-
-              if (subDirDiagnostics.length > 0) {
-                diagnostics.push([
-                  vscode.Uri.file(matchedDir),
-                  subDirDiagnostics,
-                ]);
-              }
-            })
-          );
-        }
-      )
-    );
-  }
-
-  private mergeWithParentSchema(parentSchema: any, dirSchema: any) {
-    return {
-      required: [
-        ...new Set([
-          ...(parentSchema.required || []),
-          ...(dirSchema.required || []),
-        ]),
-      ],
-      patterns: [
-        ...new Set([
-          ...(parentSchema.patterns || []),
-          ...(dirSchema.patterns || []),
-        ]),
-      ],
-      directories: {
-        ...(parentSchema.directories || {}),
-        ...(dirSchema.directories || {}),
-      },
-      _configPath: parentSchema._configPath,
-    };
   }
 }

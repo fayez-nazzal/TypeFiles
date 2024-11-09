@@ -28,7 +28,32 @@ export class ConfigService {
     while (currentDir.startsWith(workspaceRoot)) {
       const configPath = path.join(currentDir, "tfconfig.json");
       const schema = await this.loadSchemaFromPath(configPath);
+
+      const replacePathRelativeWithCurrentDir = (path: string) => {
+        if (path.startsWith("./")) {
+          return path.replace("./", currentDir + "/");
+        }
+        return path;
+      };
+
       if (schema) {
+        // Make sure relative paths will work inside schema
+        schema.required = schema?.required?.map(
+          replacePathRelativeWithCurrentDir
+        );
+
+        schema.patterns = schema?.patterns?.map(
+          replacePathRelativeWithCurrentDir
+        );
+
+        schema.matchRules = schema?.matchRules?.map(
+          ({ schemaDirectory, targetDirectories }) => ({
+            schemaDirectory: replacePathRelativeWithCurrentDir(schemaDirectory),
+            targetDirectories:
+              replacePathRelativeWithCurrentDir(targetDirectories),
+          })
+        );
+
         schemas.unshift(schema);
       }
 
@@ -93,10 +118,12 @@ export class ConfigService {
       patterns: [
         ...new Set([...(merged.patterns || []), ...(current.patterns || [])]),
       ],
-      directories: {
-        ...(merged.directories || {}),
-        ...(current.directories || {}),
-      },
+      matchRules: [
+        ...new Set([
+          ...(merged.matchRules || []),
+          ...(current.matchRules || []),
+        ]),
+      ],
       _configPath: current._configPath,
     }));
   }

@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import fg from "fast-glob";
 import { FileSchema } from "../types/schema";
-
+import path from "path";
+import { debug } from "../utils/debug";
 export class ValidationService {
   async validateDirectory(
     dirPath: string,
@@ -11,6 +12,7 @@ export class ValidationService {
     try {
       const files = await this.getFilteredFiles(dirPath, schema);
 
+      await this.validateMatchDirectory(dirPath, schema, diagnostics);
       await this.validateRequiredFiles(dirPath, schema, diagnostics);
       await this.validatePatterns(dirPath, schema, files, diagnostics);
     } catch (error) {
@@ -30,19 +32,99 @@ export class ValidationService {
     let files = await fg(["**/*"], {
       cwd: dirPath,
       onlyFiles: true,
-      dot: true,
     });
 
     if (schema.exclude) {
       const excludeMatches = await fg(schema.exclude, {
         cwd: dirPath,
         onlyFiles: true,
-        dot: true,
       });
       files = files.filter((file) => !excludeMatches.includes(file));
     }
 
     return files.filter((file) => file !== "tfconfig.json");
+  }
+
+  private async validateMatchDirectory(
+    dirPath: string,
+    schema: FileSchema,
+    diagnostics: vscode.Diagnostic[]
+  ): Promise<void> {
+    if (!schema.matchRules) {
+      return;
+    }
+
+    for (const rules of schema.matchRules) {
+      const { schemaDirectory, targetDirectories } = rules;
+      if (
+        !schemaDirectory ||
+        !targetDirectories ||
+        dirPath === schemaDirectory
+      ) {
+        continue;
+      }
+
+      const schemaDirectoryParentDir = path.dirname(schemaDirectory);
+      const dirPathParentDir = path.dirname(dirPath);
+
+      if (dirPathParentDir !== schemaDirectoryParentDir) {
+        continue;
+      }
+
+      const targetDirectoriesMatches = (
+        await fg([targetDirectories], {
+          cwd: dirPath,
+          onlyDirectories: true,
+        })
+      ).filter((dir) => dir !== schemaDirectory);
+
+      if (targetDirectoriesMatches.length === 0) {
+        continue;
+      }
+
+      const baseDierctoryPath = schemaDirectory;
+
+      const baseDierctoryFiles = await fg([`${baseDierctoryPath}/**/*`], {
+        cwd: baseDierctoryPath,
+        onlyFiles: true,
+      });
+
+      const baseDirectoryFilenames = baseDierctoryFiles.map((file) =>
+        path.basename(file)
+      );
+
+      if (baseDirectoryFilenames.length === 0) {
+        diagnostics.push(
+          this.createErrorDiagnostic(
+            `matchDirectories base ${baseDierctoryPath} has no files`
+          )
+        );
+      }
+
+      for (const targetDirectory of targetDirectoriesMatches) {
+        const targetDirectoryFiles = await fg([`${targetDirectory}/**/*`], {
+          cwd: targetDirectory,
+
+          onlyFiles: true,
+        });
+
+        const targetDirectoryFilenames = targetDirectoryFiles.map((file) =>
+          path.basename(file)
+        );
+
+        const missingFiles = baseDirectoryFilenames.filter(
+          (baseFilename) => !targetDirectoryFilenames.includes(baseFilename)
+        );
+
+        for (const missingFile of missingFiles) {
+          diagnostics.push(
+            this.createErrorDiagnostic(
+              `Missing file: ${missingFile} in ${dirPath}`
+            )
+          );
+        }
+      }
+    }
   }
 
   private async validateRequiredFiles(
@@ -58,7 +140,6 @@ export class ValidationService {
       const matches = await fg([pattern], {
         cwd: dirPath,
         onlyFiles: true,
-        dot: true,
       });
 
       if (matches.length === 0) {
@@ -123,7 +204,6 @@ export class ValidationService {
         const matches = await fg([pattern], {
           cwd: dirPath,
           onlyFiles: true,
-          dot: true,
         });
         matches.forEach((match) => allValidFiles.add(match));
       })
@@ -141,7 +221,6 @@ export class ValidationService {
         const matches = await fg([pattern], {
           cwd: dirPath,
           onlyFiles: true,
-          dot: true,
         });
         matches.forEach((match) => requiredMatches.add(match));
       })
