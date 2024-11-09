@@ -1,0 +1,59 @@
+{
+  "name": "type-files",
+  "displayName": "TypeFiles",
+  "description": "TypeScript-like validation for your file system",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "packageManager": "pnpm@9.12.1",
+  "categories": [
+    "Linters"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "type-files.validate",
+        "title": "Validate File Schema"
+      }
+    ],
+    "configuration": {
+      "title": "type-files",
+      "properties": {
+        "type-files.schema": {
+          "type": "object",
+          "default": {},
+          "description": "File schema configuration"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "NODE_ENV=production pnpm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "pnpm run compile && pnpm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.18.1",
+    "@typescript-eslint/parser": "^6.18.1",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.2"
+  },
+  "publisher": "fayezio",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fayez-nazzal/type-files-vscode"
+  }
+}
