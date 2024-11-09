@@ -1,19 +1,32 @@
-# TypeFiles - TypeScript-like validation for your file system
+# TypeFiles - TypeScript-like type validation for your file system
 
-Add tfconfig.json to any directory with the following properties:
+Have you ever wanted to validate a directory structure? Now it's easy ✌️
 
-- required: A list of required files, glob patterns are supported.
-- patters: A list of glob pattern to restrict the file names.
-- exclude: A list of filenames or patterns to exclude from the validation.
+TypeFiles is a VSCode extension that allows you to validate a directory structure based on a schema. If the schema does not match, the file name in the explorer panel will be highlighted with an error color. A message will be shown in the vscode problems panel.
 
-Example:
+## Usage
+
+Add a `tfconfig.json` file to any directory -> Now you have a type-like validation for your file system!
 
 ```json
 {
-  "required": ["**/icons/**/close.svg"],
-  "patterns": ["**/icons/**/*.svg"],
-  "exclude": ["**/icons/temp/*"]
+  "patterns": ["**/icons/**/*.svg"], // Only allow svg files
+  "required": ["**/icons/**/close.svg"], // Required file glob pattern
+  "exclude": ["**/icons/temp/*"] // Exclude files from the validation
 }
 ```
 
-If the file system doesn't match the schema, the file name in the explorer will be highlighted in red. And a message will be shown in the vscode problems panel.
+## Using a directory as a schema
+
+If you want other directories to match an existing directory, you can use the `matchRules` property.
+
+```json
+{
+  "matchRules": [
+    {
+      "schemaDirectory": "./icons/solid", // Take the `icons/solid` directory as a schema
+      "targetDirectories": "./icons/*" // Any sibling directory should match this schema.
+    }
+  ]
+}
+```
