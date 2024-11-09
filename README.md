@@ -18,7 +18,7 @@ Add a `tfconfig.json` file to any directory -> Now you have a type-like validati
 
 ## Using a directory as a schema
 
-If you want other directories to match an existing directory, you can use the `matchRules` property.
+If you want other directories file names to match an existing directory, you can use the `matchRules` property.
 
 ```json
 {
