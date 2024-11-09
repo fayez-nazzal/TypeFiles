@@ -1,4 +1,4 @@
-# TypeFiles - TypeScript-like type validation for your file system
+# TypeFiles
 
 Have you ever wanted to validate a directory structure? Now it's easy ✌️
 
